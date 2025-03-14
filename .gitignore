@@ -1,0 +1,50 @@
+# 모델 파일
+*.pth
+*.ckpt
+models/
+outputs/
+
+# 파이썬 관련
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# 가상환경
+venv/
+ml_decoder_env/
+env/
+ENV/
+
+# IDE 관련
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Docker 관련
+.dockerignore
+Dockerfile
+docker-compose.yml
+
+# 로그와 임시 파일
+*.log
+logs/
+*.tmp
+.DS_Store
