@@ -40,7 +40,6 @@ ENV/
 
 # Docker 관련
 .dockerignore
-Dockerfile
 docker-compose.yml
 
 # 로그와 임시 파일
