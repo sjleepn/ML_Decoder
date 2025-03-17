@@ -13,15 +13,15 @@ import matplotlib
 
 from src_files.models.tresnet.tresnet import InplacABN_to_ABN
 
-matplotlib.use('TkAgg')
-matplotlib.use('TkAgg')
+# matplotlib.use('TkAgg')
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from PIL import Image
 import numpy as np
 
 parser = argparse.ArgumentParser(description='PyTorch MS_COCO infer')
 parser.add_argument('--num-classes', default=80, type=int)
-parser.add_argument('--model-path', type=str, default='./models_local/TRresNet_L_448_86.6.pth')
+parser.add_argument('--model-path', type=str, default='./models/model-highest.pt')
 parser.add_argument('--pic-path', type=str, default='./pics/000000000885.jpg')
 parser.add_argument('--model-name', type=str, default='tresnet_l')
 parser.add_argument('--image-size', type=int, default=448)
@@ -42,9 +42,20 @@ def main():
 
     # Setup model
     print('creating model {}...'.format(args.model_name))
-    model = create_model(args, load_head=True).cuda()
+    
+    # load_head=False로 수정
+    model = create_model(args, load_head=False).cuda()
+    
     state = torch.load(args.model_path, map_location='cpu')
-    model.load_state_dict(state['model'], strict=True)
+
+    # 모델 로드 부분 수정
+    if isinstance(state, dict) and 'model' in state:
+        # 체크포인트가 {'model': state_dict, ...} 형식인 경우
+        model.load_state_dict(state['model'], strict=True)
+    else:
+        # 체크포인트가 직접 state_dict인 경우 (현재 우리 모델)
+        model.load_state_dict(state, strict=True)
+
     ########### eliminate BN for faster inference ###########
     model = model.cpu()
     model = InplacABN_to_ABN(model)
@@ -54,7 +65,39 @@ def main():
     print('done')
 
 
-    classes_list = np.array(list(state['idx_to_class'].values()))
+    # 클래스 목록 생성 부분 수정
+    if isinstance(state, dict) and 'idx_to_class' in state:
+        # 체크포인트에 클래스 정보가 있는 경우
+        classes_list = np.array(list(state['idx_to_class'].values()))
+    else:
+        # 클래스 정보가 없는 경우, 수동으로 정의
+        if args.num_classes == 80:  # COCO
+            # COCO 클래스 목록 - 파일에서 불러오거나 하드코딩
+            COCO_CLASSES = [
+    'person', 'bicycle', 'car', 'motorcycle', 'airplane', 
+    'bus', 'train', 'truck', 'boat', 'traffic light', 
+    'fire hydrant', 'stop sign', 'parking meter', 'bench', 'bird',
+    'cat', 'dog', 'horse', 'sheep', 'cow',
+    'elephant', 'bear', 'zebra', 'giraffe', 'backpack',
+    'umbrella', 'handbag', 'tie', 'suitcase', 'frisbee',
+    'skis', 'snowboard', 'sports ball', 'kite', 'baseball bat',
+    'baseball glove', 'skateboard', 'surfboard', 'tennis racket', 'bottle',
+    'wine glass', 'cup', 'fork', 'knife', 'spoon',
+    'bowl', 'banana', 'apple', 'sandwich', 'orange',
+    'broccoli', 'carrot', 'hot dog', 'pizza', 'donut',
+    'cake', 'chair', 'couch', 'potted plant', 'bed',
+    'dining table', 'toilet', 'tv', 'laptop', 'mouse',
+    'remote', 'keyboard', 'cell phone', 'microwave', 'oven',
+    'toaster', 'sink', 'refrigerator', 'book', 'clock',
+    'vase', 'scissors', 'teddy bear', 'hair drier', 'toothbrush'
+]
+            classes_list = np.array(COCO_CLASSES)
+        elif args.num_classes == 5:  # 강아지 털 색상
+            classes_list = np.array(["white", "black", "gray", "brown", "beige"])
+        else:
+            # 일반적인 경우: 0부터 num_classes-1까지 번호 부여
+            classes_list = np.array([f"class_{i}" for i in range(args.num_classes)])
+
     print('done\n')
 
     # doing inference
@@ -83,10 +126,15 @@ def main():
     plt.imshow(im)
     plt.axis('off')
     plt.axis('tight')
-    # plt.rcParams["axes.titlesize"] = 10
     plt.title("detected classes: {}".format(detected_classes))
+    # 화면 표시 대신 파일로 저장
+    plt.savefig('output_prediction.jpg')
+    print(f"Prediction result saved to output_prediction.jpg")
 
-    plt.show()
+    # 결과 터미널에 출력
+    print("\n예측 결과:")
+    for i, (cls, score) in enumerate(zip(detected_classes, scores[:len(detected_classes)])):
+        print(f"  {i+1}. {cls}: {score*100:.2f}%")
     print('done\n')
 
 
