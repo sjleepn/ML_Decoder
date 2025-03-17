@@ -11,11 +11,11 @@ from src_files.helper_functions.helper_functions import mAP, CocoDetection, Cuto
     add_weight_decay
 from src_files.models import create_model
 from src_files.loss_functions.losses import AsymmetricLoss
-from randaugment import RandAugment
+# from randaugment import RandAugment
 from torch.cuda.amp import GradScaler, autocast
 
 parser = argparse.ArgumentParser(description='PyTorch MS_COCO Training')
-parser.add_argument('--data', type=str, default='/home/MSCOCO_2014/')
+parser.add_argument('--data', type=str, default='/workspace/datasets/COCO14')
 parser.add_argument('--lr', default=1e-4, type=float)
 parser.add_argument('--model-name', default='tresnet_l')
 parser.add_argument('--model-path', default='https://miil-public-eu.oss-eu-central-1.aliyuncs.com/model-zoo/ML_Decoder/tresnet_l_pretrain_ml_decoder.pth', type=str)
@@ -65,7 +65,7 @@ def main():
                                   transforms.Compose([
                                       transforms.Resize((args.image_size, args.image_size)),
                                       CutoutPIL(cutout_factor=0.5),
-                                      RandAugment(),
+                                    #   RandAugment(),
                                       transforms.ToTensor(),
                                       # normalize,
                                   ]))
@@ -89,7 +89,7 @@ def train_multi_label_coco(model, train_loader, val_loader, lr):
     ema = ModelEma(model, 0.9997)  # 0.9997^641=0.82
 
     # set optimizer
-    Epochs = 40
+    Epochs = 5
     weight_decay = 1e-4
     criterion = AsymmetricLoss(gamma_neg=4, gamma_pos=0, clip=0.05, disable_torch_grad_focal_loss=True)
     parameters = add_weight_decay(model, weight_decay)
@@ -130,6 +130,8 @@ def train_multi_label_coco(model, train_loader, val_loader, lr):
                               loss.item()))
 
         try:
+            # 저장 전 디렉토리 확인 및 생성
+            os.makedirs('models', exist_ok=True)
             torch.save(model.state_dict(), os.path.join(
                 'models/', 'model-{}-{}.ckpt'.format(epoch + 1, i + 1)))
         except:
