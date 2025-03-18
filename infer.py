@@ -19,10 +19,11 @@ import matplotlib.pyplot as plt
 from PIL import Image
 import numpy as np
 
-parser = argparse.ArgumentParser(description='PyTorch MS_COCO infer')
-parser.add_argument('--num-classes', default=80, type=int)
-parser.add_argument('--model-path', type=str, default='./models/model-highest.pt')
-parser.add_argument('--pic-path', type=str, default='./pics/000000000885.jpg')
+# 인자 기본값 수정
+parser = argparse.ArgumentParser(description='강아지 털 색상 분류 추론')
+parser.add_argument('--num-classes', default=5, type=int)
+parser.add_argument('--model-path', type=str, default='./models/dog-colors-best.pt')
+parser.add_argument('--pic-path', type=str, default='/home/lucas/datasets/dog_color_coco_250317/test/88e12121-7ad0-4dae-83f1-a8e9a24014a1.jpeg')
 parser.add_argument('--model-name', type=str, default='tresnet_l')
 parser.add_argument('--image-size', type=int, default=448)
 # parser.add_argument('--dataset-type', type=str, default='MS-COCO')
@@ -34,8 +35,9 @@ parser.add_argument('--num-of-groups', default=-1, type=int)  # full-decoding
 parser.add_argument('--decoder-embedding', default=768, type=int)
 parser.add_argument('--zsl', default=0, type=int)
 
+# 메인 함수의 시작 부분 문구도 변경
 def main():
-    print('Inference code on a single image')
+    print('강아지 털 색상 분류 추론 코드')
 
     # parsing args
     args = parser.parse_args()
@@ -126,13 +128,13 @@ def main():
     plt.imshow(im)
     plt.axis('off')
     plt.axis('tight')
-    plt.title("detected classes: {}".format(detected_classes))
+    plt.title("Detected dog fur colors: {}".format(detected_classes))
     # 화면 표시 대신 파일로 저장
     plt.savefig('output_prediction.jpg')
     print(f"Prediction result saved to output_prediction.jpg")
 
-    # 결과 터미널에 출력
-    print("\n예측 결과:")
+    # 결과 터미널에 출력 - 색상 특화 메시지
+    print("\nDetected fur colors:")
     for i, (cls, score) in enumerate(zip(detected_classes, scores[:len(detected_classes)])):
         print(f"  {i+1}. {cls}: {score*100:.2f}%")
     print('done\n')
