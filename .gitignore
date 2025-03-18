@@ -2,7 +2,7 @@
 *.pt
 *.pth
 *.ckpt
-results/
+*_results/
 outputs/
 
 # 파이썬 관련
