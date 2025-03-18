@@ -1,7 +1,8 @@
 # 모델 파일
+*.pt
 *.pth
 *.ckpt
-models/
+results/
 outputs/
 
 # 파이썬 관련
