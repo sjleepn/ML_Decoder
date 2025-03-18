@@ -131,6 +131,59 @@ class CocoDetection(datasets.coco.CocoDetection):
         return img, target
 
 
+class CustomCocoDetection(datasets.coco.CocoDetection):
+    """COCO 데이터셋을 위한 커스텀 데이터 로더. 클래스 수를 동적으로 설정할 수 있습니다."""
+    
+    def __init__(self, root, annFile, transform=None, target_transform=None, num_classes=5):
+        self.root = root
+        self.coco = COCO(annFile)
+        self.num_classes = num_classes  # 클래스 수 지정 (기본값: 5)
+
+        self.ids = list(self.coco.imgToAnns.keys())
+        self.transform = transform
+        self.target_transform = target_transform
+        self.cat2cat = dict()
+        for cat in self.coco.cats.keys():
+            self.cat2cat[cat] = len(self.cat2cat)
+        
+        # 클래스 수에 맞게 출력 텐서 생성 for debugging
+        print(f"Category mapping (first 5): {list(self.cat2cat.items())[:5]}")
+        print(f"Total classes: {len(self.cat2cat)}, Using classes: {self.num_classes}")
+
+    def __getitem__(self, index):
+        coco = self.coco
+        img_id = self.ids[index]
+        ann_ids = coco.getAnnIds(imgIds=img_id)
+        target = coco.loadAnns(ann_ids)
+
+        # 지정된 클래스 수에 맞는 출력 텐서 생성
+        output = torch.zeros((3, self.num_classes), dtype=torch.long)
+        
+        for obj in target:
+            # 카테고리 ID가 범위 내에 있는 경우만 처리
+            if obj['category_id'] in self.cat2cat:
+                cat_id = self.cat2cat[obj['category_id']]
+                if cat_id < self.num_classes:  # 지정된 클래스 수 범위 내에서만 처리
+                    if obj['area'] < 32 * 32:
+                        output[0][cat_id] = 1
+                    elif obj['area'] < 96 * 96:
+                        output[1][cat_id] = 1
+                    else:
+                        output[2][cat_id] = 1
+        
+        target = output
+        path = coco.loadImgs(img_id)[0]['file_name']
+        img = Image.open(os.path.join(self.root, path)).convert('RGB')
+        
+        if self.transform is not None:
+            img = self.transform(img)
+
+        if self.target_transform is not None:
+            target = self.target_transform(target)
+            
+        return img, target
+
+
 class ModelEma(torch.nn.Module):
     def __init__(self, model, decay=0.9997, device=None):
         super(ModelEma, self).__init__()
